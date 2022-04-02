@@ -4,7 +4,7 @@ const validateHmac = require("./validate-hmac");
 const createOAuthCallback = (config) => {
   return async function oAuthCallback(ctx) {
     const { query } = ctx;
-    const { code, hmac, shop, state: nonce } = query;
+    const { code, hmac, shop, state: nonce, host } = query;
     const { apiKey, secret, afterAuth } = config;
 
     if (nonce == null) {
@@ -45,11 +45,12 @@ const createOAuthCallback = (config) => {
     }
 
     const accessTokenData = await accessTokenResponse.json();
-    const { access_token: accessToken } = accessTokenData;
+    const { access_token: accessToken, scope: scope } = accessTokenData;
 
     ctx.state.shopify = {
       shop,
       accessToken,
+      scope,
     };
 
     if (afterAuth) {
