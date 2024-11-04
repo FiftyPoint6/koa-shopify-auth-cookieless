@@ -36,7 +36,7 @@ const createOAuthCallback = (config) => {
           "Content-Length": Buffer.byteLength(accessTokenQuery).toString(),
         },
         body: accessTokenQuery,
-      }
+      },
     );
 
     if (!accessTokenResponse.ok) {
@@ -47,16 +47,34 @@ const createOAuthCallback = (config) => {
     const accessTokenData = await accessTokenResponse.json();
     const { access_token: accessToken, scope: scope } = accessTokenData;
 
+    async function addMissingScopes(scopes) {
+      const scopesArray = scopes.split(",");
+      const uniqueScopes = new Set(scopesArray);
+
+      // Loop through each scope and add missing read scopes if needed
+      for (const scope of scopesArray) {
+        if (scope.startsWith("write_")) {
+          const readScope = `read_${scope.slice(6)}`;
+          uniqueScopes.add(readScope);
+        }
+        uniqueScopes.add(scope);
+      }
+
+      return Array.from(uniqueScopes).join(",");
+    }
+
+    let updatedScopes = await addMissingScopes(scope);
+
     ctx.state.shopify = {
       shop,
       accessToken,
-      scope,
+      scope: updatedScopes,
     };
 
     if (afterAuth) {
       await afterAuth(ctx);
     }
   };
-}
+};
 
 module.exports = createOAuthCallback;
